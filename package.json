@@ -6,7 +6,7 @@
   "scripts": {
     "watch": "tsc -w",
     "server": "nodemon dist/index.js",
-    "start": "concurrently \"npm run watch\" \"npm run server\"",
+    "start": "concurrently \"npm run watch \" \"npm run server\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

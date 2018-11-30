@@ -15,3 +15,4 @@ gulp.task('assets', function() {
         .pipe(gulp.dest('dist'));
 });
 gulp.task('default', ['watch', 'assets']);
+// "start": "concurrently \"npm run watch ./\" \"npm run server\"",
