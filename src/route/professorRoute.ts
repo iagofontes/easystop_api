@@ -3,33 +3,35 @@ import { professorController } from '../controller/professorController';
 export class ProfessorRoute {
 
     router: Router
-    // professorController: ProfessorController;
     
     constructor() {
-        // this.professorController = new ProfessorController();
         this.router = Router();
         this.init();
-    }
-    public get(req: Request, res: Response, next: NextFunction) {
-        res.json({nome:"Joaquim"});
-    }
-    public get2(req: Request, res: Response, next: NextFunction) {
-        res.json({nome:"Francisco"});
     }
     public adicionarProfessor(req: Request, res: Response, next: NextFunction) {
         let response = professorController
             .adicionarProfessor(req.body.nome, new Date(req.body.nascimento));
         res.json({menssagem:response.getMensagem()}).status(response.getHttpResponse());
         response = null;
-        next;
+        next();
+    }
+    public buscarProfessores(req: Request, res: Response, next: NextFunction) {
+        let response = professorController.buscarProfessores();
+        res.json(response).status(200);
+        response = null;
+        next();
+    }
+    public removerProfessor(req: Request, res: Response, next: NextFunction) {
+        let response = professorController.removerProfessor(req.body.codigo);
+        res.json({"mensagem":response.getMensagem()}).status(response.getHttpResponse());
+        response = null;
+        next();
     }
     init() {
-        this.router.get('/api/v1/professor', this.get);
-        this.router.get('/api/v1/professor2', this.get2);
+        this.router.get('/api/v1/professores', this.buscarProfessores);
         this.router.post('/api/v1/professores', this.adicionarProfessor);
+        this.router.put('/api/v1/professores', ()=>{});
+        this.router.delete('/api/v1/professores', this.removerProfessor);
     }
 }
 export const professorRoute = new ProfessorRoute().router;
-// const professorRoute = new ProfessorRoute();
-// professorRoute.init();
-// export default professorRoute.router;
