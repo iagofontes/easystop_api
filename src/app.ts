@@ -2,17 +2,22 @@ import * as path from 'path';
 import * as express from 'express';
 import * as logger from 'morgan';
 import * as bodyParser from 'body-parser';
-// import * as professorRoute from './route/professorRoute';
+import * as mongoose from 'mongoose';
 import { professorRoute } from './route/professorRoute';
+import { alunoRoute } from './route/alunoRoute';
+import { motoristaRoute } from './route/motoristaRoute';
+import { estacionamentoRoute } from './route/estacionamentoRoute';
 
 // Criando as configurações para o ExpressJS
 class App {
     // Instancia dele
     public express: express.Application;
+    public mongoUrl: string = 'mongodb://mobile:iagoti2014@ds131954.mlab.com:31954/easystop?authMechanism=SCRAM-SHA-1';
     constructor() {
         this.express = express();
         this.middleware();
         this.routes();
+        this.mongoSetup();
     }
     // Configuração para o nosso middler
     private middleware(): void {
@@ -22,14 +27,15 @@ class App {
     }
     //Configuração da nossa API e nossos EndPoint e o famoso Hello 
     private routes(): void { 
-        let router = express.Router(); 
-        router.get('/', (req, res, next) => {
-            res.json({message: 'Hello World!'});
-        });
-
-        this.express.use('/', router);
         this.express.use('/', professorRoute);
-        // this.express.use('/api/v1/professor', professorRoute);
+        this.express.use('/', alunoRoute);
+        this.express.use('/', motoristaRoute);
+        this.express.use('/', estacionamentoRoute);
+    }
+    //Configuração do mongodb
+    private mongoSetup(): void {
+        (<any>mongoose).Promise = global.Promise;
+        mongoose.connect(this.mongoUrl, { useNewUrlParser: true });
     }
 }
 export default new App().express;
