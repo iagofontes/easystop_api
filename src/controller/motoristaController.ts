@@ -5,8 +5,11 @@ import { ResponseRequest } from '../util/responseRequest';
 import { Motorista } from '../model/motorista';
 import { Cartao } from '../model/cartao';
 import { MotoristaSchema } from '../schema/motoristaSchema';
+import { ICarro } from '../interface/icarro';
+import { CarroSchema } from '../schema/carroSchema';
 
 const motoristaSchema = mongoose.model('Motorista', MotoristaSchema);
+const carroSchema = mongoose.model('Carro', CarroSchema);
 const cpf = require('@fnando/cpf/dist/node');
 
 export class MotoristaController {
@@ -88,7 +91,7 @@ export class MotoristaController {
             }
             motoristaSchema.findOne(
                 { email: emailMotorista, senha: senhaMotorista },
-                (err, dbMotorista)=>{
+                (err, dbMotorista: any)=>{
                     if(err) {
                         console.log(err);
                         response.setMensagem('Problemas ao realizar login.');
@@ -99,29 +102,13 @@ export class MotoristaController {
                             response.setMensagem('E-mail ou senha inválidos.');
                             response.setHttpResponse(401);
                         }
+                        console.log(dbMotorista)
+                        response.setMensagem(dbMotorista.codigo)
                         resolve(response);
                     }
                 });
         });
     }
-
-    // public atualizarAluno(alCodigo: number, alNome: String, alEmail: String, alDate: Date, alPontos: number) : ResponseRequest {
-    //     var aluno = new Aluno(alCodigo, alNome, alEmail, alDate, alPontos);
-    //     var response = new ResponseRequest('Impossível atualizar aluno.', 500);
-    //     if(this.validarAluno(aluno) && (aluno.getCodigo() > 0)) {
-    //         if(this.updateAluno(aluno)){
-    //             response.setMensagem('Aluno atualizado.');
-    //             response.setHttpResponse(200);
-    //         } else {
-    //             response.setMensagem('Problemas ao atualizar aluno.');
-    //             response.setHttpResponse(500);
-    //         }
-    //     } else {
-    //         response.setMensagem('Dados inválidos para aluno.');
-    //         response.setHttpResponse(400);
-    //     }
-    //     return response;
-    // }
 
     public removerMotorista(motoristaKey: number) : Promise<ResponseRequest> {
         return new Promise((resolve, reject) => {
@@ -151,12 +138,211 @@ export class MotoristaController {
         });
     }
 
+    public adicionarCarroMotorista(carro: ICarro) : Promise<ResponseRequest> {
+        var response = new ResponseRequest('Veículo adicionado com sucesso.', 200);
+        return new Promise((resolve, reject) => {
+            if(carro.motorista <= 0) {
+                response.setMensagem('Veículo não possui motorista vinculado.');
+                response.setHttpResponse(400);
+                resolve(response);
+            }
+            this.buscarMotoristaPorCodigo(carro.motorista)
+                .then((res)=>{
+                    if(res) {
+                        carro.codigo = (Date.now())*2;
+                        let car = new carroSchema(carro);
+                        car.save((err, c)=>{
+                            if(err) {
+                                console.log(err);
+                                response.setMensagem('Problemas ao salvar motorista, tente novamente.');
+                                response.setHttpResponse(500);
+                                reject(response);
+                                return;
+                            }
+                            resolve(response);
+                        });
+                    } else {
+                        response.setMensagem('Motorista não encontrado.');
+                        response.setHttpResponse(400);
+                        resolve(response);
+                    }
+                });
+        });
+    }
+
+    public buscarCarrosMotorista(motorista: number) : Promise<ICarro[]> {
+        var response = new Array<ICarro>();
+        return new Promise((resolve, reject) => {
+            if(motorista <= 0) {
+                resolve(response);
+            } else {
+                carroSchema.find({
+                    motorista: motorista,
+                    status: true
+                }, (err, c)=>{
+                    if(err) {
+                        console.log(err);
+                        reject(response);
+                        return;
+                    } else {
+                        c.forEach((carDB)=>{
+                            response.push(this.converterDocEmCarro(carDB));
+                        });
+                        resolve(response);
+                    }
+                });
+            }
+        });
+    }
+
+    public atualizarCarro(carro: ICarro) : Promise<ResponseRequest> {
+        var response = new ResponseRequest('Veículo atualizado com sucesso.', 200);
+        return new Promise((resolve, reject) => {
+            if(carro.codigo <= 0) {
+                response.setMensagem('Veículo não possui identificação.');
+                response.setHttpResponse(400);
+                resolve(response);
+            } else {
+                this.buscarCarro(carro.codigo)
+                    .then((resp)=>{
+                        carroSchema.findOneAndUpdate({
+                            _id: resp.codigo
+                        }, 
+                        { $set: 
+                            { 
+                                "marca"      : carro.marca,
+                                "modelo"     : carro.modelo,
+                                "ano"        : carro.ano,
+                                "placa"      : carro.placa,
+                                "status"     : true
+                            } 
+                        },
+                        (err, c)=>{
+                            if(err) {
+                                console.log(err);
+                                response.setMensagem('Problemas ao atualizar veículo, tente novamente.');
+                                response.setHttpResponse(500);
+                                reject(response);
+                                return;
+                            }
+                            resolve(response);
+                        });
+                    })
+                    .catch((error)=>{
+                        response.setMensagem('Problemas ao procurar veículo.');
+                        response.setHttpResponse(500);
+                        reject(response);
+                    });
+
+            }
+        });
+    }
+
+    public removerCarro(carro: number) : Promise<ResponseRequest> {
+        var response = new ResponseRequest('Veículo removido com sucesso.', 200);
+        return new Promise((resolve, reject) => {
+            if(carro <= 0) {
+                response.setMensagem('Veículo não possui identificação.');
+                response.setHttpResponse(400);
+                resolve(response);
+            } else {
+                // _id: '5c36702f11f46a14856262d2'
+                this.buscarCarro(carro)
+                    .then((resp)=>{
+                        carroSchema.findOneAndUpdate({
+                            _id: resp.codigo
+                        }, 
+                        { $set: { status: false } },
+                        (err, c)=>{
+                            if(err) {
+                                console.log(err);
+                                response.setMensagem('Problemas ao remover veículo, tente novamente.');
+                                response.setHttpResponse(500);
+                                reject(response);
+                                return;
+                            }
+                            resolve(response);
+                        });
+                    })
+                    .catch((error)=>{
+                        response.setMensagem('Problemas ao procurar veículo.');
+                        response.setHttpResponse(500);
+                        reject(response);
+                    });
+
+            }
+        });
+    }
+
+    public buscarCarro(codigo: number) : Promise<ICarro> {
+        return new Promise((resolve, reject) => {
+
+            if(codigo <= 0) {
+                resolve( 
+                    {
+                        "codigo"     : 0,
+                        "motorista"  : 0,
+                        "marca"      : '',
+                        "modelo"     : '',
+                        "ano"        : '',
+                        "placa"      : '',
+                        "status"     : false
+                    }
+                );
+                return;
+            }
+
+            carroSchema.findOne( 
+                { codigo : codigo } , 
+                (err, res)=>{
+                    if(err) {
+                        console.log(err);
+                        reject(
+                            {
+                                "codigo"     : 0,
+                                "motorista"  : 0,
+                                "marca"      : '',
+                                "modelo"     : '',
+                                "ano"        : '',
+                                "placa"      : '',
+                                "status"     : false
+                            }
+                        );
+                    }
+                    let carro = this.converterDocEmCarro(res);
+                    carro.codigo = res._id;
+                    resolve( carro );
+                }
+            );
+
+        });
+    }
+
     private verificarDuplicidade(motorista: Motorista) : Promise<boolean> {
         return new Promise((resolve, reject) => {
             motoristaSchema.findOne(
                 { email : motorista.getEmail() ,
                   cpf   : motorista.getCPF() 
                 }, 
+                (err, motorist) => {
+                    if(err) {
+                        console.log(err);
+                        reject(false);
+                    } else {
+                        if(motorist) {
+                            resolve(true);
+                        }
+                        resolve(false);
+                    }
+                }
+            );
+        });
+    }
+
+    private buscarMotoristaPorCodigo(codigo: number) : Promise<boolean> {
+        return new Promise((resolve, reject) => {
+            motoristaSchema.findOne(
+                { codigo : codigo }, 
                 (err, motorist) => {
                     if(err) {
                         console.log(err);
@@ -190,6 +376,18 @@ export class MotoristaController {
             new Cartao(motoristaDoc.cartao.codigo, motoristaDoc.cartao.bandeira, 
                 motoristaDoc.cartao.emissor, motoristaDoc.cartao.numero, 
                 motoristaDoc.cartao.cvv, motoristaDoc.cartao.vencimento), motoristaDoc.status);
+    }
+
+    private converterDocEmCarro(carroDoc: any): ICarro {
+        return {
+            codigo     : carroDoc.codigo,
+            motorista  : carroDoc.motorista,
+            marca      : carroDoc.marca,
+            modelo     : carroDoc.modelo,
+            ano        : carroDoc.ano,
+            placa      : carroDoc.placa,
+            status     : carroDoc.status
+        };
     }
 
 }
