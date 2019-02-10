@@ -26,11 +26,11 @@ export class MotoristaRoute {
         motoristaController
             .adicionarMotorista(req.body.nome, req.body.email, req.body.senha, req.body.cpf, req.body.telefone, new Date(req.body.nascimento))
             .then((response)=>{
-                res.status(response.getHttpResponse()).json({menssagem:response.getMensagem()});
+                res.status(response.getHttpResponse()).json({"mensagem":response.getMensagem()});
             })
             .catch((error)=>{
                 console.log(error);
-                res.status(error.getHttpResponse()).json({menssagem:error.getMensagem()});
+                res.status(error.getHttpResponse()).json({"mensagem":error.getMensagem()});
             })
             .then(()=>{
                 next();

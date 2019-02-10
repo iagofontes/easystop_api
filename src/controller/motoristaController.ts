@@ -7,6 +7,7 @@ import { Cartao } from '../model/cartao';
 import { MotoristaSchema } from '../schema/motoristaSchema';
 import { ICarro } from '../interface/icarro';
 import { CarroSchema } from '../schema/carroSchema';
+import { isNull } from 'util';
 
 const motoristaSchema = mongoose.model('Motorista', MotoristaSchema);
 const carroSchema = mongoose.model('Carro', CarroSchema);
@@ -98,11 +99,12 @@ export class MotoristaController {
                         response.setHttpResponse(500);
                         reject(response);
                     } else {
-                        if(!dbMotorista) {
+                        if(!dbMotorista || isNull(dbMotorista)) {
                             response.setMensagem('E-mail ou senha inválidos.');
                             response.setHttpResponse(401);
+                            resolve(response);
+                            return;
                         }
-                        console.log(dbMotorista)
                         response.setMensagem(dbMotorista.codigo)
                         resolve(response);
                     }
